@@ -12,9 +12,10 @@
 #include "pgAgent.h"
 #include "connection.h"
 
-#include <boost/locale/encoding_utf.hpp>
+#include <algorithm>
+#include <string>
 
-#if !BOOST_OS_WINDOWS
+#if !_WIN32
 #include <unistd.h>
 #include <stdlib.h>
 #endif
@@ -85,7 +86,7 @@ void setOptions(int argc, char **argv, const std::string &executable)
 					printVersion();
 					exit(0);
 				}
-#if !BOOST_OS_WINDOWS
+#if !_WIN32
 				case 'f':
 				{
 					runInForeground = true;
@@ -138,22 +139,40 @@ void WaitAWhile(const bool waitLong)
 
 std::string NumToStr(const long l)
 {
-	return boost::lexical_cast<std::string>(l);
+	return std::to_string(l);
 }
 
-#if BOOST_OS_WINDOWS
+#if _WIN32
 // This function is used to convert const std::str to std::wstring.
-std::wstring s2ws(const std::string &str)
+std::wstring s2ws(const std::string &nstr)
 {
-	using boost::locale::conv::utf_to_utf;
-	return utf_to_utf<wchar_t>(str.c_str(), str.c_str() + str.size());
+	const char* st = nstr.c_str();
+	size_t length = nstr.length();
+	if (0 == length || nullptr == st) return std::wstring();
+	auto size_needed = MultiByteToWideChar(CP_UTF8, 0, st, static_cast<int> (length), nullptr, 0);
+	if (0 == size_needed) return std::wstring();
+	auto res = std::wstring();
+	res.resize(size_needed);
+	auto buf = std::addressof(res.front());
+	int chars_copied = MultiByteToWideChar(CP_UTF8, 0, st, static_cast<int> (length), buf, size_needed);
+	if (chars_copied != size_needed) return std::wstring();
+	return res;
 }
 
 // This function is used to convert std::wstring to std::str
-std::string ws2s(const std::wstring &wstr)
+std::string ws2s(const std::wstring& wstr)
 {
-	using boost::locale::conv::utf_to_utf;
-	return utf_to_utf<char>(wstr.c_str(), wstr.c_str() + wstr.size());
+	const wchar_t* wbuf = wstr.c_str();
+	size_t length = wstr.length();
+	if (0 == length) return std::string();
+	int size_needed = WideCharToMultiByte(CP_UTF8, 0, wbuf, static_cast<int> (length), nullptr, 0, nullptr, nullptr);
+	if (0 == size_needed) return std::string();
+	auto res = std::string();
+	res.resize(size_needed);
+	auto buf = std::addressof(res.front());
+	int bytes_copied = WideCharToMultiByte(CP_UTF8, 0, wbuf, static_cast<int> (length), buf, size_needed, nullptr, nullptr);
+	if (bytes_copied != size_needed) return std::string();
+	return res;
 }
 #endif
 
@@ -165,7 +184,7 @@ std::string generateRandomString(size_t length)
 	int r;
 
 	str[length - 1] = '\0';
-	srand(time(NULL));
+	srand(static_cast<unsigned int>(time(NULL)));
 
 	for(i = 0; i < length - 1; ++i)
 	{
@@ -195,7 +214,7 @@ std::string generateRandomString(size_t length)
 std::string getTemporaryDirectoryPath()
 {
 
-#if BOOST_OS_WINDOWS
+#if _WIN32
     std::wstring tmp_dir;
 
     wchar_t wcharPath[MAX_PATH];
@@ -229,4 +248,56 @@ std::string getTemporaryDirectoryPath()
 
 		return tmp_dir;
 #endif
+}
+
+
+std::string& str_replace_all(std::string& str, const std::string& snippet, const std::string& replacement)
+{
+	if (snippet.empty())
+	{
+		return str;
+	}
+	auto pos = std::string::npos;
+	while (std::string::npos != (pos = str.find(snippet)))
+	{
+		str.replace(pos, snippet.length(), replacement);
+	}
+	return str;
+}
+
+std::string str_trim(const std::string& s)
+{
+	auto wsfront = std::find_if_not(s.begin(), s.end(), [](int c) {
+		return std::isspace(c);
+	});
+	return std::string(wsfront, std::find_if_not(s.rbegin(), std::string::const_reverse_iterator(wsfront), [](int c) {
+		return std::isspace(c);
+	}).base());
+}
+
+std::string	get_host_name()
+{
+#ifdef _WIN32
+	std::wstring wbuf = std::wstring();
+	wbuf.resize(MAX_COMPUTERNAME_LENGTH + 1);
+	DWORD len = static_cast<DWORD>(wbuf.length());
+	if (GetComputerNameW(wbuf.data(), &len))
+	{
+		wbuf.resize(len);
+		return ws2s(wbuf);
+	}
+	else
+	{
+		return "UNKNOWN_HOSTNAME";
+	}
+#else //!_WIN32
+	std::string buf;
+	buf.resize(HOST_NAME_MAX + 1);
+	if (!gethostname(buf.data(), buf.length())) {
+		return std::string(buf.data(), strlen(buf.data());
+	}
+	else {
+		return "UNKNOWN_HOSTNAME";
+	}
+#endif //_WIN32
 }

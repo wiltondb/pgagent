@@ -13,8 +13,6 @@
 #ifndef JOB_H
 #define JOB_H
 
-#include <boost/thread.hpp>
-
 class Job
 {
 public:

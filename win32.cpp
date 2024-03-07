@@ -14,6 +14,7 @@
 // This is for Win32 only!!
 #ifdef WIN32
 
+#include <string>
 #include <process.h>
 
 using namespace std;
@@ -366,7 +367,7 @@ bool installService(const std::wstring &serviceName, const std::wstring &executa
 				(LPTSTR)&lpMsgBuf,
 				0, NULL
 				);
-			LogMessage(ws2s((boost::wformat(L"%s") % lpMsgBuf).str()), LOG_ERROR);
+			LogMessage(ws2s(std::wstring(lpMsgBuf ? static_cast<const wchar_t*>(lpMsgBuf) : L"")), LOG_ERROR);
 		}
 
 		CloseServiceHandle(manager);
@@ -398,7 +399,7 @@ bool installService(const std::wstring &serviceName, const std::wstring &executa
 			0,
 			REG_SZ,
 			(unsigned char *)(path.c_str()),
-			(path.length() + 1)*sizeof(std::wstring));
+			static_cast<DWORD>((path.length() + 1)*sizeof(std::wstring)));
 
 		if (ERROR_SUCCESS == last_error)
 		{
@@ -590,10 +591,10 @@ void main(int argc, char **argv)
 	}
 	else if (command == L"RUN")
 	{
-		std::string app = "pgAgent Service";
+		std::wstring app = L"pgAgent Service";
 
 		SERVICE_TABLE_ENTRY serviceTable[] =
-		{ (LPSTR)app.c_str(), serviceMain, 0, 0 };
+		{ app.data(), serviceMain, 0, 0 };
 
 		setupForRun(argc, argv, false, s2ws(executable));
 		if (!StartServiceCtrlDispatcher(serviceTable))

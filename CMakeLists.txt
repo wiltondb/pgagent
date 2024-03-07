@@ -27,8 +27,6 @@ SET(CMAKE_FIND_LIBRARY_PREFIXES "")
 SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
 
 SET(STATIC_BUILD NO CACHE BOOL "Statically link the executable?")
-SET(BOOST_MULTITHREADED_BUILD YES CACHE BOOL "Build multithreaded executable?")
-SET(BOOST_STATIC_BUILD NO CACHE BOOL "Statically link the executable?")
 ################################################################################
 # Apple stuff
 ################################################################################
@@ -64,6 +62,8 @@ PROJECT(pgagent)
 # pgaevent/pgamsgevent.rc at present.
 SET(VERSION "4.2.2")
 
+SET(CMAKE_CXX_STANDARD 17)
+
 # CPack stuff
 SET(CPACK_PACKAGE_VERSION_MAJOR 4)
 SET(CPACK_PACKAGE_VERSION_MINOR 2)
@@ -83,8 +83,7 @@ ADD_DEFINITIONS(-DPGAGENT_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR})
 ADD_DEFINITIONS(-DPGAGENT_VERSION="${VERSION}")
 
 IF(WIN32)
-    SET(BOOST_WIN_VERSION 0x0501)
-    ADD_DEFINITIONS(-D_WIN32_WINNT=${BOOST_WIN_VERSION} -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
+    ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 ENDIF(WIN32)
 
 # This must come after we set the CPACK variables!!
@@ -99,24 +98,6 @@ FIND_PACKAGE(PG REQUIRED)
 
 INCLUDE_DIRECTORIES(${PG_INCLUDE_DIRS})
 LINK_DIRECTORIES(${PG_LIBRARY_DIRS})
-
-################################################################################
-# Find Boost Libraries
-################################################################################
-SET (Boost_FIND_REQUIRED TRUE)
-SET (Boost_FIND_QUIETLY FALSE)
-SET (Boost_DEBUG FALSE)
-SET (Boost_USE_MULTITHREADED ${BOOST_MULTITHREADED_BUILD})
-SET (Boost_USE_STATIC_LIBS ${BOOST_STATIC_BUILD})
-
-FIND_PACKAGE(Boost COMPONENTS filesystem regex date_time thread system)
-
-if(Boost_FOUND)
-  INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
-  LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
-ELSE()
-  MESSAGE(FATAL_ERROR "Boost library not found.")
-endif()
 
 ################################################################################
 # Let's rock!
@@ -136,11 +117,11 @@ ENDIF(WIN32)
 ADD_EXECUTABLE(pgagent ${_srcs})
 IF(UNIX AND NOT APPLE)
 TARGET_LINK_LIBRARIES(
-        pgagent ${PG_LIBRARIES} ${Boost_LIBRARIES} -pthread
+        pgagent ${PG_LIBRARIES} -pthread
 )
 ELSE()
 TARGET_LINK_LIBRARIES(
-        pgagent ${PG_LIBRARIES} ${Boost_LIBRARIES}
+        pgagent ${PG_LIBRARIES}
 )
 ENDIF()
 
@@ -201,11 +182,6 @@ MESSAGE(STATUS "  PostgreSQL include path     : ${PG_INCLUDE_DIRS}")
 MESSAGE(STATUS "  PostgreSQL library path     : ${PG_LIBRARY_DIRS}")
 MESSAGE(STATUS "  PostgreSQL share path       : ${PG_SHARE_DIR}")
 MESSAGE(STATUS " ")
-MESSAGE(STATUS "  Boost version               : ${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
-MESSAGE(STATUS "  Boost path                  : ${Boost_INCLUDE_DIRS}")
-MESSAGE(STATUS "  Boost include directory     : ${Boost_INCLUDE_DIRS}")
-MESSAGE(STATUS "  Boost library directory     : ${Boost_LIBRARY_DIRS}")
-MESSAGE(STATUS "  Boost Static linking        : ${Boost_USE_STATIC_LIBS}")
 MESSAGE(STATUS "================================================================================")
 MESSAGE(STATUS " ")
 

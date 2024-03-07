@@ -10,14 +10,15 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include "pgAgent.h"
-#include <string>
 
-namespace ip = boost::asio::ip;
+#include <mutex>
+#include <sstream>
+#include <string>
 
 DBconn   *DBconn::ms_primaryConn = NULL;
 CONNinfo  DBconn::ms_basicConnInfo;
 
-static boost::mutex  s_poolLock;
+static std::mutex  s_poolLock;
 
 DBconn::DBconn(const std::string &connectString)
 : m_inUse(false), m_next(NULL), m_prev(NULL), m_minorVersion(0),
@@ -62,8 +63,8 @@ std::string DBconn::qtDbString(const std::string &value)
 {
 	std::string result = value;
 
-	boost::replace_all(result, "\\", "\\\\");
-	boost::replace_all(result, "'", "''");
+	str_replace_all(result, "\\", "\\\\");
+	str_replace_all(result, "'", "''");
 	result.append("'");
 
 	if (BackendMinimumVersion(8, 1))
@@ -99,7 +100,7 @@ DBconn *DBconn::InitConnection(const std::string &connectString)
 	{
 		ms_primaryConn = NULL;
 		// Unlock the mutex before logging error.
-		locker = (boost::mutex *)NULL;
+		locker = (std::mutex *)NULL;
 		LogMessage(
 			"Primary connection string is not valid!\n" +
 			ms_basicConnInfo.GetError(),
@@ -112,7 +113,7 @@ DBconn *DBconn::InitConnection(const std::string &connectString)
 	if (ms_primaryConn == NULL)
 	{
 		// Unlock the mutex before logging error.
-		locker = (boost::mutex *)NULL;
+		locker = (std::mutex *)NULL;
 		LogMessage(
 			"Failed to create primary connection... out of memory?", LOG_ERROR
 		);
@@ -231,7 +232,7 @@ void DBconn::Return()
 
 	// Cleanup
 	ExecuteVoid("RESET ALL");
-	m_lastError.empty();
+	m_lastError.clear();
 	m_inUse = false;
 
 	LogMessage((
@@ -298,9 +299,10 @@ void DBconn::ClearConnections(bool all)
 			deleted++;
 		}
 
-		LogMessage((boost::format(
-			"Connection stats: total - %d, free - %d, deleted - %d"
-		) % total % free % deleted).str(), LOG_DEBUG);
+		LogMessage(
+			std::string("Connection stats : total - ") + std::to_string(total) + "," +
+				" free - " + std::to_string(free) + ", deleted - " + std::to_string(deleted),
+		LOG_DEBUG);
 
 	}
 	else
@@ -356,8 +358,7 @@ int DBconn::ExecuteVoid(const std::string &query)
 
 std::string DBconn::GetLastError()
 {
-	boost::algorithm::trim(m_lastError);
-	return m_lastError;
+	return str_trim(m_lastError);
 }
 
 ///////////////////////////////////////////////////////7
@@ -481,9 +482,9 @@ const std::string CONNinfo::Parse(
 		val = opt->val;
 		if (forLogging)
 		{
-			LogMessage((
-				boost::format("%s: %s") % opt->keyword %
-				(opt->dispchar[0] == '*' ? "*****" : val)).str(), LOG_DEBUG
+			LogMessage(
+				std::string(opt->keyword) + ": " + 
+				std::string(opt->dispchar[0] == '*' ? "*****" : val), LOG_DEBUG
 			);
 		}
 

@@ -12,7 +12,7 @@
 #include "pgAgent.h"
 
 // *nix only!!
-#ifndef WIN32
+#ifndef _WIN32
 
 #include <iostream>
 #include <fcntl.h>

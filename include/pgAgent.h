@@ -13,24 +13,21 @@
 #ifndef PGAGENT_H
 #define PGAGENT_H
 
-#if BOOST_OS_WINDOWS
+#if _MSC_VER
+#ifndef UNICODE
+#define UNICODE
+#endif // UNICODE
+#ifndef _UNICODE
+#define _UNICODE
+#endif // _UNICODE
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif // NOMINMAX
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif // WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
-
-#include <boost/asio.hpp>
-#include <boost/format.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/regex.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/tokenizer.hpp>
-#include <boost/algorithm/string/replace.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/date_time/gregorian/gregorian.hpp>
-#include <boost/date_time/gregorian/gregorian_types.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "misc.h"
 #include "connection.h"
@@ -42,7 +39,7 @@ extern long        minLogLevel;
 extern std::string connectString;
 extern std::string backendPid;
 
-#if !BOOST_OS_WINDOWS
+#if !_WIN32
 extern bool        runInForeground;
 extern std::string logFile;
 #endif
@@ -64,7 +61,7 @@ enum
 void LogMessage(const std::string &msg, const int &level);
 void MainLoop();
 
-#if BOOST_OS_WINDOWS
+#if _WIN32
 void CheckForInterrupt();
 HANDLE win32_popen_r(const WCHAR *command, HANDLE &handle);
 #endif

@@ -11,9 +11,12 @@
 
 #include "pgAgent.h"
 
+#include <filesystem>
+#include <fstream>
+
 #include <sys/types.h>
 
-#if !BOOST_OS_WINDOWS
+#if !_WIN32
 #include <errno.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -171,10 +174,10 @@ int Job::Execute()
 				// Generate random string of 6 characters long to make unique dir name
 				std::string result = generateRandomString(7);
 				sFilesName = prefix + m_jobid + std::string("_") + stepid + std::string("_") + result;
-#if BOOST_OS_WINDOWS
-				std::string sModel = (boost::format("%s\\%s") % sDirectory % sFilesName).str();
+#if _WIN32
+				std::string sModel = sDirectory + "\\" + sFilesName;
 #else
-				std::string sModel = (boost::format("%s/%s") % sDirectory % sFilesName).str();
+				std::string sModel = sDirectory + "/" + sFilesName;
 #endif
 				std::string dirname = sModel;
 
@@ -186,7 +189,7 @@ int Job::Execute()
 					break;
 				}
 
-				if (!boost::filesystem::create_directory(boost::filesystem::path(dirname)))
+				if (!std::filesystem::create_directory(std::filesystem::path(dirname)))
 				{
 					LogMessage(
 						"Couldn't create temporary directory: " + dirname, LOG_WARNING
@@ -195,7 +198,7 @@ int Job::Execute()
 					break;
 				}
 
-#if BOOST_OS_WINDOWS
+#if _WIN32
 				std::string filename = dirname + "\\" + m_jobid + "_" + stepid + ".bat";
 				std::string errorFile = dirname + "\\" + m_jobid + "_" + stepid + "_error.txt";
 #else
@@ -207,9 +210,9 @@ int Job::Execute()
 
 				// Cleanup the code. If we're on Windows, we need to make all line ends \r\n,
 				// If we're on Unix, we need \n
-				boost::replace_all(code, "\r\n", "\n");
-#if BOOST_OS_WINDOWS
-				boost::replace_all(code, "\n", "\r\n");
+				str_replace_all(code, "\r\n", "\n");
+#if _WIN32
+				str_replace_all(code, "\n", "\r\n");
 #endif
 				std::ofstream out_file;
 
@@ -222,8 +225,8 @@ int Job::Execute()
 						LOG_WARNING
 					);
 
-					if (boost::filesystem::exists(dirname))
-						boost::filesystem::remove_all(dirname);
+					if (std::filesystem::exists(dirname))
+						std::filesystem::remove_all(dirname);
 
 					rc = -1;
 					break;
@@ -233,7 +236,7 @@ int Job::Execute()
 					out_file << code;
 					out_file.close();
 
-#if !BOOST_OS_WINDOWS
+#if !_WIN32
 					// change file permission to 700 for executable in linux
 					int ret = chmod((const char *)filename.c_str(), S_IRWXU);
 
@@ -252,7 +255,7 @@ int Job::Execute()
 				FILE *fpError = freopen((const char *)errorFile.c_str(), "w", stderr);
 
 				// Execute the file and capture the output
-#if BOOST_OS_WINDOWS
+#if _WIN32
 				// The Windows way
 				HANDLE h_script, h_process;
 				DWORD  dwRead;
@@ -262,9 +265,11 @@ int Job::Execute()
 
 				if (!h_script)
 				{
-					LogMessage((boost::format(
-						"Couldn't execute script: %s, GetLastError() returned %d, errno = %d"
-					) % filename.c_str() % GetLastError() % errno).str(), LOG_WARNING);
+					LogMessage(
+						std::string("Couldn't execute script: ") + filename + "," +
+						" GetLastError() returned " + std::to_string(GetLastError()) + "," +
+						" errno = " + std::to_string(errno),
+					LOG_WARNING);
 					CloseHandle(h_process);
 					rc = -1;
 
@@ -301,9 +306,10 @@ int Job::Execute()
 
 				if (!fp_script)
 				{
-					LogMessage((boost::format(
-						"Couldn't execute script: %s, errno = %d"
-					) % filename.c_str() % errno).str(), LOG_WARNING);
+					LogMessage(
+						std::string("Couldn't execute script: ") + filename + "," + 
+						" errno = " + std::to_string(errno),
+					LOG_WARNING);
 					rc = -1;
 
 					if(fpError)
@@ -330,7 +336,7 @@ int Job::Execute()
 
 				// set success status for batch runs, be pessimistic by default
 				LogMessage(
-					(boost::format("Script return code: %d") % rc).str(),
+					std::string("Script return code: ") + std::to_string(rc),
 					LOG_DEBUG
 				);
 
@@ -368,12 +374,12 @@ int Job::Execute()
 				// output in the log, just throw warnings.
 				try
 				{
-					boost::filesystem::path dir_path(dirname);
+					std::filesystem::path dir_path(dirname);
 
-					if (boost::filesystem::exists(dir_path))
-						boost::filesystem::remove_all(dir_path);
+					if (std::filesystem::exists(dir_path))
+						std::filesystem::remove_all(dir_path);
 				}
-				catch (boost::filesystem::filesystem_error const & e)
+				catch (std::filesystem::filesystem_error const & e)
 				{
 					//display error message
 					LogMessage((const char *)e.what(), LOG_WARNING);

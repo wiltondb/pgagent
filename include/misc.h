@@ -13,22 +13,28 @@
 #ifndef MISC_H
 #define MISC_H
 
+#include <mutex>
+#include <string>
+
 void          WaitAWhile(const bool waitLong = false);
 void          setOptions(int argc, char **argv, const std::string &executable);
 std::string   getArg(int &argc, char **&argv);
 std::string   NumToStr(const long l);
 void          printVersion();
-#if BOOST_OS_WINDOWS
+#if _WIN32
 std::wstring  s2ws(const std::string &str);
 std::string   ws2s(const std::wstring &wstr);
 #endif
 std::string   generateRandomString(size_t length);
 std::string   getTemporaryDirectoryPath();
+std::string&  str_replace_all(std::string& str, const std::string& snippet, const std::string& replacement);
+std::string   str_trim(const std::string& s);
+std::string	  get_host_name();
 
 class MutexLocker
 {
 public:
-	MutexLocker(boost::mutex *lock): m_lock(lock)
+	MutexLocker(std::mutex *lock): m_lock(lock)
 	{
 		if (m_lock != NULL)
 			m_lock->lock();
@@ -44,7 +50,7 @@ public:
 	// When the exit(code) is being called, static object is being released
 	// earlier. Hence - it is a good idea to set the current mutex object to
 	// NULL to avoid ASSERTION in debug mode (specifically on OSX).
-	MutexLocker& operator =(boost::mutex *lock)
+	MutexLocker& operator =(std::mutex *lock)
 	{
 		if (m_lock != NULL)
 			m_lock->unlock();
@@ -57,7 +63,7 @@ public:
 	}
 
 private:
-	boost::mutex *m_lock;
+	std::mutex *m_lock;
 };
 
 #endif // MISC_H

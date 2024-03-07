@@ -11,7 +11,9 @@
 
 #include "pgAgent.h"
 
-#if !BOOST_OS_WINDOWS
+#include <thread>
+
+#if !_WIN32
 #include <unistd.h>
 #endif
 
@@ -25,7 +27,7 @@ using namespace std;
 
 #define MAXATTEMPTS 10
 
-#if !BOOST_OS_WINDOWS
+#if !_WIN32
 bool        runInForeground = false;
 std::string logFile;
 
@@ -89,7 +91,7 @@ int MainRestartLoop(DBconn *serviceConn)
 
 	rc = serviceConn->ExecuteVoid("DROP TABLE pga_tmp_zombies");
 
-	std::string host_name = boost::asio::ip::host_name();
+	std::string host_name = get_host_name();
 
 	rc = serviceConn->ExecuteVoid(
 		"INSERT INTO pgagent.pga_jobagent (jagpid, jagstation) SELECT pg_backend_pid(), '" +
@@ -120,7 +122,7 @@ int MainRestartLoop(DBconn *serviceConn)
 			{
 				std::string jobid = res->GetString("jobid");
 
-				boost::thread job_thread = boost::thread(JobThread(jobid));
+				std::thread job_thread = std::thread(JobThread(jobid));
 				job_thread.detach();
 				foundJobToExecute = true;
 				res->MoveNext();
@@ -207,7 +209,7 @@ void MainLoop()
 			std::string strPgAgentSchemaVer = serviceConn->ExecuteScalar(
 				"SELECT pgagent.pgagent_schema_version()"
 			);
-			std::string currentPgAgentVersion = (boost::format("%d") % PGAGENT_VERSION_MAJOR).str();
+			std::string currentPgAgentVersion = std::to_string(PGAGENT_VERSION_MAJOR);
 
 			if (strPgAgentSchemaVer != currentPgAgentVersion)
 			{
@@ -225,9 +227,10 @@ void MainLoop()
 			MainRestartLoop(serviceConn);
 		}
 
-		LogMessage((boost::format(
-			"Couldn't create the primary connection [Attempt #%d]") % attemptCount
-		).str(), LOG_STARTUP);
+		LogMessage(
+			std::string("Couldn't create the primary connection [Attempt #") + std::to_string(attemptCount) + "]", 
+			LOG_STARTUP
+		);
 
 		DBconn::ClearConnections(true);
 
