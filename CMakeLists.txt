@@ -26,6 +26,8 @@ SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 SET(CMAKE_FIND_LIBRARY_PREFIXES "")
 SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
 
+SET(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dist CACHE PATH "")
+
 SET(STATIC_BUILD NO CACHE BOOL "Statically link the executable?")
 ################################################################################
 # Apple stuff
@@ -128,7 +130,7 @@ ENDIF()
 # Installation
 IF (WIN32)
     INSTALL(TARGETS pgagent DESTINATION .)
-    INSTALL(FILES ${pgagent_SOURCE_DIR}/sql/pgagent.sql DESTINATION .)
+    # INSTALL(FILES ${pgagent_SOURCE_DIR}/sql/pgagent.sql DESTINATION .)
 ELSE(WIN32)
     INSTALL(TARGETS pgagent DESTINATION bin)
     INSTALL(FILES ${pgagent_SOURCE_DIR}/sql/pgagent.sql DESTINATION share)
@@ -145,10 +147,16 @@ IF(PG_EXTENSION)
         MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/sql/pgagent.sql
     )
     ADD_CUSTOM_TARGET(run ALL DEPENDS ${CMAKE_BINARY_DIR}/pgagent--${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.sql ${CMAKE_BINARY_DIR}/pgagent.control)
-    INSTALL(FILES ${CMAKE_BINARY_DIR}/pgagent--${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.sql DESTINATION ${PG_SHARE_DIR}/extension)
-    FILE(GLOB SQL "${CMAKE_CURRENT_SOURCE_DIR}/sql/*--*.sql")
+    INSTALL(FILES ${CMAKE_BINARY_DIR}/pgagent--${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.sql DESTINATION .)
+    # FILE(GLOB SQL "${CMAKE_CURRENT_SOURCE_DIR}/sql/*--*.sql")
     FILE(GLOB CONTROL "${CMAKE_CURRENT_SOURCE_DIR}/*.control")
-    INSTALL(FILES ${CMAKE_BINARY_DIR}/pgagent.control ${CONTROL} ${SQL} DESTINATION ${PG_SHARE_DIR}/extension)
+    INSTALL(FILES ${CMAKE_BINARY_DIR}/pgagent.control ${CONTROL} ${SQL} DESTINATION .)
+    INSTALL(FILES
+        ${PG_ROOT_DIR}/bin/libcrypto-3-x64.dll 
+        ${PG_ROOT_DIR}/bin/libpq.dll
+        ${PG_ROOT_DIR}/bin/libssl-3-x64.dll
+        ${PG_ROOT_DIR}/bin/zlib.dll
+        DESTINATION .)
 ENDIF(PG_EXTENSION)
 
 ################################################################################
