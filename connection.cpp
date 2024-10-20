@@ -11,6 +11,7 @@
 
 #include "pgAgent.h"
 
+#include <cstring>
 #include <mutex>
 #include <sstream>
 #include <string>

@@ -15,10 +15,13 @@
 #ifndef _WIN32
 
 #include <iostream>
-#include <fcntl.h>
 #include <fstream>
+#include <mutex>
 
-static boost::mutex s_loggerLock;
+#include <fcntl.h>
+#include <unistd.h>
+
+static std::mutex s_loggerLock;
 bool printFileErrorMsg = true;
 
 using namespace std;
@@ -46,6 +49,8 @@ void LogMessage(const std::string &msg, const int &level)
 	bool writeToStdOut = false;
 	MutexLocker locker(&s_loggerLock);
 
+// TODO: fixme
+#if 0
 	if (!logFile.empty())
 	{
 		std::string log_file(logFile.begin(), logFile.end());
@@ -114,6 +119,7 @@ void LogMessage(const std::string &msg, const int &level)
 	{
 		out.close();
 	}
+#endif // 0
 }
 
 

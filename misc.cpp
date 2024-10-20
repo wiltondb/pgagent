@@ -12,6 +12,7 @@
 #include "pgAgent.h"
 #include "connection.h"
 
+#include <cstring>
 #include <algorithm>
 #include <string>
 
@@ -19,6 +20,10 @@
 #include <unistd.h>
 #include <stdlib.h>
 #endif
+
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 255
+#endif // !HOST_NAME_MAX
 
 #define APPVERSION_STR PGAGENT_VERSION
 
@@ -294,7 +299,7 @@ std::string	get_host_name()
 	std::string buf;
 	buf.resize(HOST_NAME_MAX + 1);
 	if (!gethostname(buf.data(), buf.length())) {
-		return std::string(buf.data(), strlen(buf.data());
+		return std::string(buf.data(), strlen(buf.data()));
 	}
 	else {
 		return "UNKNOWN_HOSTNAME";

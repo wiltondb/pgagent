@@ -151,12 +151,14 @@ IF(PG_EXTENSION)
     # FILE(GLOB SQL "${CMAKE_CURRENT_SOURCE_DIR}/sql/*--*.sql")
     FILE(GLOB CONTROL "${CMAKE_CURRENT_SOURCE_DIR}/*.control")
     INSTALL(FILES ${CMAKE_BINARY_DIR}/pgagent.control ${CONTROL} ${SQL} DESTINATION .)
-    INSTALL(FILES
-        ${PG_ROOT_DIR}/bin/libcrypto-3-x64.dll 
-        ${PG_ROOT_DIR}/bin/libpq.dll
-        ${PG_ROOT_DIR}/bin/libssl-3-x64.dll
-        ${PG_ROOT_DIR}/bin/zlib.dll
-        DESTINATION .)
+    IF (WIN32)
+        INSTALL(FILES
+            ${PG_ROOT_DIR}/bin/libcrypto-3-x64.dll 
+            ${PG_ROOT_DIR}/bin/libpq.dll
+            ${PG_ROOT_DIR}/bin/libssl-3-x64.dll
+            ${PG_ROOT_DIR}/bin/zlib.dll
+            DESTINATION .)
+    ENDIF(WIN32)
 ENDIF(PG_EXTENSION)
 
 ################################################################################
