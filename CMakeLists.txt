@@ -122,13 +122,29 @@ INCLUDE_DIRECTORIES(${pgagent_SOURCE_DIR}
 FILE(GLOB _cpp_files *.cpp)
 FILE(GLOB _h_files include/*.h)
 
-SET(_srcs ${_cpp_files} ${_h_files})
+IF (EMPTY_COMPILATION)
+    SET(_srcs empty.cpp)
+ELSE()
+    SET(_srcs
+        connection.cpp
+        job.cpp
+        misc.cpp
+        pgAgent.cpp
+        precomp.cpp
+        unix.cpp
+        win32.cpp
+        include/connection.h
+        include/job.h
+        include/misc.h
+        include/pgAgent.h)
+ENDIF()
 
 IF(WIN32)
     SET(_srcs ${_srcs} pgagent.rc)
 ENDIF(WIN32)
 
 ADD_EXECUTABLE(pgagent ${_srcs})
+
 IF(UNIX AND NOT APPLE)
 TARGET_LINK_LIBRARIES(
         pgagent ${PG_LIBRARIES} -pthread
